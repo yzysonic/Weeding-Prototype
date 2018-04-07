@@ -9,23 +9,36 @@ public class PlayerControl : MonoBehaviour {
     public float jump_speed = 5;
     public float rotate_speed = 10;
     public float gravity = 9.8f;
+    public GameObject attack_foot;
 
     public State state { get; private set; }
     private Animator animator;
     private CharacterController controller;
     private Quaternion target_quat;
     private Vector3 movement;
+    private SphereCollider collider_foot;
+    private int anime_state_kick;
 
     // Use this for initialization
     void Start () {
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
         state= new StateIdle(this);
+        anime_state_kick = Animator.StringToHash("Base Layer.Kick");
+
+        if (attack_foot != null)
+            collider_foot = attack_foot.GetComponent<SphereCollider>();
     }
 	
 	// Update is called once per frame
 	void Update () {
         state.Update();
+    }
+
+    private void OnDisable()
+    {
+        animator.SetFloat("Movement", 0.0f);
+        state.ToIdle();
     }
 
     public void UpdateMove()
@@ -98,11 +111,11 @@ public class PlayerControl : MonoBehaviour {
             player.UpdateMove();
 
             // ジャンプ入力の検出
-            if (Input.GetButton("Jump"))
+            if (Input.GetButtonDown("Jump"))
                 ToJump();
 
             // 攻撃入力の検出
-            if (Input.GetButton("Fire1"))
+            if (Input.GetButtonDown("Fire1"))
                 ToKick();
         }
         public override void ToRun()
@@ -125,14 +138,15 @@ public class PlayerControl : MonoBehaviour {
         public override void OnEnter()
         {
             player.animator.SetTrigger("Kick");
+            player.collider_foot.enabled = true;
         }
         public override void Update()
         {
-            ToIdle();
         }
         public override void ToIdle()
         {
             Set(new StateIdle(player));
+            player.collider_foot.enabled = false;
         }
     }
 
@@ -147,6 +161,10 @@ public class PlayerControl : MonoBehaviour {
             if (Input.GetButton("Jump"))
                 ToJump();
 
+            // 攻撃入力の検出
+            if (Input.GetButtonDown("Fire1"))
+                ToKick();
+
         }
         public override void ToIdle()
         {
@@ -155,6 +173,10 @@ public class PlayerControl : MonoBehaviour {
         public override void ToJump()
         {
             Set(new StateJump(player));
+        }
+        public override void ToKick()
+        {
+            Set(new StateKick(player));
         }
 
     }
