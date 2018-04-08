@@ -45,12 +45,7 @@ public class PlayerControl : MonoBehaviour {
     {
 
         // 移動入力の取得
-        Vector2 control = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-        control = speed * control.normalized;
-
-        movement.x = control.x;
-        movement.z = control.y;
-        //movement.Normalize();
+        Vector2 control = (new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"))).normalized;
 
         // アニメーターの設定
         animator.SetFloat("Movement", control.sqrMagnitude);
@@ -61,14 +56,23 @@ public class PlayerControl : MonoBehaviour {
             // ステート遷移
             state.ToRun();
 
+            movement.x = control.x;
+            movement.z = control.y;
+
+            // カメラ空間に変換
+            float angle = Camera.main.gameObject.GetComponent<FollowPlayer>().GetPhi() + 0.5f * Mathf.PI;
+            movement = Quaternion.Euler(0, -angle*Mathf.Rad2Deg, 0) * movement;
+            //movement.x = control.x * Mathf.Cos(angle) - control.y * Mathf.Sin(angle);
+            //movement.z = control.x * Mathf.Sin(angle) + control.y * Mathf.Cos(angle);
+
             // 目標向きの計算
-            target_quat = Quaternion.LookRotation(new Vector3(control.x, 0.0f, control.y));
+            target_quat = Quaternion.LookRotation(movement);
 
             // 回転処理
             transform.rotation = Quaternion.Slerp(transform.rotation, target_quat, Time.deltaTime * rotate_speed);
 
             // 移動処理
-            controller.Move(movement * Time.deltaTime);
+            controller.Move(movement*speed * Time.deltaTime);
 
         }
         else

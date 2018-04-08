@@ -33,6 +33,11 @@ public class UIFollowTarget : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        rect_transform.position = RectTransformUtility.WorldToScreenPoint(Camera.main, target.position + new Vector3(0.0f, y_offset, 0.0f));
+        Vector3 screen_pos = Camera.main.WorldToScreenPoint(target.position + new Vector3(0.0f, y_offset, 0.0f)); ;
+        rect_transform.position = screen_pos;
+        if (screen_pos.z >= 0.0f)
+            rect_transform.localScale = Vector3.one;
+        else
+            rect_transform.localScale = Vector3.zero;
     }
 }

@@ -8,6 +8,7 @@ TagManager:
   - Ground
   - UICanvas
   - Enemy
+  - Water
   layers:
   - Default
   - TransparentFX

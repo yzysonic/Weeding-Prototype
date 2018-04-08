@@ -10,11 +10,11 @@ public class EnemyBehavior : MonoBehaviour {
     public float rotate_speed = 0.05f;
     public float fry_speed = 5.0f;
     public float disappear_time = 1.5f;
-    public GameObject hp_ui_perfab;
+    public Transform target;
+    public GameObject hp_ui_prefab;
     public System.Action event_damage;
     public System.Action event_death;
 
-    private GameObject target;
     private Rigidbody rb;
     private SphereCollider sc;
     private Vector3 VecToTarget;
@@ -36,7 +36,6 @@ public class EnemyBehavior : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         // エネミーの初期化
-        target = GameObject.FindGameObjectWithTag("Player");
         rb = GetComponent<Rigidbody>();
         sc = GetComponent<SphereCollider>();
         state = State.Fry;
@@ -45,7 +44,7 @@ public class EnemyBehavior : MonoBehaviour {
         ignore_damage = false;
 
         // HPゲージの初期化
-        GameObject hp_bar = Instantiate(hp_ui_perfab);
+        GameObject hp_bar = Instantiate(hp_ui_prefab);
         hp_bar.transform.SetParent(GameObject.FindGameObjectWithTag("UICanvas").transform);
 
         hp_ui = hp_bar.GetComponent<UIFollowTarget>();
@@ -85,7 +84,7 @@ public class EnemyBehavior : MonoBehaviour {
         // ターゲットへ移動
         if (target != null && state == State.Normal)
         {
-            VecToTarget = (target.transform.position - transform.position).normalized;
+            VecToTarget = (target.position - transform.position).normalized;
             rb.MoveRotation(Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(new Vector3(VecToTarget.x, 0.0f, VecToTarget.z)), rotate_speed));
             rb.MovePosition(transform.position + transform.forward * speed * Time.deltaTime);
         }
@@ -100,6 +99,7 @@ public class EnemyBehavior : MonoBehaviour {
             sc.isTrigger = true;
             rb.isKinematic = true;
             rb.MoveRotation(Quaternion.LookRotation(new Vector3(VecToTarget.x, 0.0f, VecToTarget.z)));
+            rb.MovePosition(new Vector3(transform.position.x, collision.contacts[0].point.y, transform.position.z));
             state = State.Normal;
         }
     }
@@ -113,6 +113,7 @@ public class EnemyBehavior : MonoBehaviour {
             rb.isKinematic = false;
             rb.AddForce(new Vector3(VecToTarget.x*fry_speed*-7.0f, fry_speed, VecToTarget.z*fry_speed*-7.0f), ForceMode.VelocityChange);
             rb.AddTorque(new Vector3(Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f)), ForceMode.VelocityChange);
+            rb.MovePosition(transform.position + Vector3.up);
 
             // 一時的当たり判定を無効化
             Physics.IgnoreCollision(sc, other);
@@ -122,14 +123,30 @@ public class EnemyBehavior : MonoBehaviour {
 
 
             state = State.Fry;
-            Damage(100);
+            Damage(50);
         }
 
+        else if(other.gameObject.tag == "Enemy")
+        {
+            // 一時的当たり判定を無効化
+            Physics.IgnoreCollision(sc, other);
+            ignore_damage = true;
+            ignore_collider = other;
+            ignore_timer = 0.0f;
+
+            Damage(10);
+        }
+
+        else if(other.gameObject.tag == "Water")
+        {
+            Damage(max_hp);
+        }
     }
 
     private void OnDestroy()
     {
-        Destroy(hp_ui.gameObject);
+        if(hp_ui != null)
+            Destroy(hp_ui.gameObject);
     }
 
     private void Death()
