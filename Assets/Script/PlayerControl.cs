@@ -10,6 +10,7 @@ public class PlayerControl : MonoBehaviour {
     public float rotate_speed = 10;
     public float gravity = 9.8f;
     public GameObject attack_foot;
+    public AudioClip clip_kick;
 
     public State state { get; private set; }
     private Animator animator;
@@ -17,22 +18,38 @@ public class PlayerControl : MonoBehaviour {
     private Quaternion target_quat;
     private Vector3 movement;
     private SphereCollider collider_foot;
+    private AudioSource audio_source;
     private int anime_state_kick;
 
     // Use this for initialization
     void Start () {
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
+        audio_source = GetComponent<AudioSource>();
         state= new StateIdle(this);
         anime_state_kick = Animator.StringToHash("Base Layer.Kick");
 
         if (attack_foot != null)
             collider_foot = attack_foot.GetComponent<SphereCollider>();
+
+        AtkTarget atkt = GetComponent<AtkTarget>();
+        atkt.event_damage += Damage;
+        atkt.event_death += () =>
+        {
+            state.ToDeath();
+            var game_ctrl = GameObject.Find("SceneManager").GetComponent<GameControll>();
+            game_ctrl.GameOver();
+            game_ctrl.gameover_wait_time = 5.0f;
+        };
     }
 	
 	// Update is called once per frame
 	void Update () {
         state.Update();
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            GetComponent<AtkTarget>().Damage(99);
+        }
     }
 
     private void OnDisable()
@@ -81,6 +98,11 @@ public class PlayerControl : MonoBehaviour {
 
     }
 
+    private void Damage(int point)
+    {
+
+    }
+
     public abstract class State
     {
         public PlayerControl player { get; protected set; }
@@ -105,6 +127,9 @@ public class PlayerControl : MonoBehaviour {
         public virtual void ToRun() { }
         public virtual void ToJump() { }
         public virtual void ToKick() { }
+        public void ToDeath() {
+            Set(new StateDeath(player));
+        }
     }
 
     private class StateIdle : State
@@ -128,7 +153,7 @@ public class PlayerControl : MonoBehaviour {
         }
         public override void ToJump()
         {
-            Set(new StateJump(player));
+            //Set(new StateJump(player));
         }
         public override void ToKick()
         {
@@ -143,6 +168,7 @@ public class PlayerControl : MonoBehaviour {
         {
             player.animator.SetTrigger("Kick");
             player.collider_foot.enabled = true;
+            player.audio_source.PlayOneShot(player.clip_kick);
         }
         public override void Update()
         {
@@ -176,7 +202,7 @@ public class PlayerControl : MonoBehaviour {
         }
         public override void ToJump()
         {
-            Set(new StateJump(player));
+            //Set(new StateJump(player));
         }
         public override void ToKick()
         {
@@ -236,6 +262,15 @@ public class PlayerControl : MonoBehaviour {
             Set(new StateIdle(player));
         }
 
+    }
+
+    private class StateDeath : State
+    {
+        public StateDeath(PlayerControl player) : base(player) { }
+        public override void OnEnter()
+        {
+            player.animator.SetTrigger("Death");
+        }
     }
 
 

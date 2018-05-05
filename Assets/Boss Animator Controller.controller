@@ -5,7 +5,7 @@ AnimatorController:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: Enemy Animator Controller
+  m_Name: Boss Animator Controller
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: attack
@@ -146,7 +146,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 0b0590229dbd4e842bf9c3e5655e2a63, type: 3}
+  m_Motion: {fileID: 7400000, guid: 00b5f47817d07e340806c73a7bee137f, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -172,7 +172,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400004, guid: 0b0590229dbd4e842bf9c3e5655e2a63, type: 3}
+  m_Motion: {fileID: 7400004, guid: 00b5f47817d07e340806c73a7bee137f, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
