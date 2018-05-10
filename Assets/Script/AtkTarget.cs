@@ -6,6 +6,7 @@ public class AtkTarget : MonoBehaviour
 {
     public int max_hp = 100;
     public float radius = 1.0f;
+    public bool show_hp = true;
     public GameObject hp_ui_prefab;
     public AudioClip clip_damage;
     public System.Action<int> event_damage;
@@ -25,6 +26,8 @@ public class AtkTarget : MonoBehaviour
         hp_ui = hp_bar.GetComponent<UIFollowTarget>();
         hp_ui.target = gameObject.transform;
         hp_ui.hp_value = 1.0f;
+
+        hp_bar.SetActive(show_hp);
     }
 
     public void Damage(int point)

@@ -177,10 +177,16 @@ public class EnemyBehaviour : MonoBehaviour
                 // プレイヤーに飛ばされた処理
                 if (other.gameObject.tag == "PlayerAttack")
                 {
+                    var player = GameObject.FindGameObjectWithTag("Player");
+                    player.GetComponent<PlayerControl>().sp += 10;
+                    target = player.transform;
+
                     sc.isTrigger = false;
                     rb.isKinematic = false;
                     float angle = GameObject.FindGameObjectWithTag("Player").transform.eulerAngles.y * Mathf.Deg2Rad;
-                    rb.AddForce(new Vector3(fry_speed * 7.0f * Mathf.Sin(angle), fry_speed, fry_speed * 7.0f * Mathf.Cos(angle)), ForceMode.VelocityChange);
+                    float power = fry_speed * (player.GetComponent<PlayerControl>().kick_power + 0.3f);
+                    rb.AddForce(new Vector3(power * Mathf.Sin(angle) * 7.0f, power, power * Mathf.Cos(angle) * 7.0f), ForceMode.VelocityChange);
+                    //rb.AddForce(new Vector3(fry_speed * 7.0f * Mathf.Sin(angle), fry_speed, fry_speed * 7.0f * Mathf.Cos(angle)), ForceMode.VelocityChange);
                     rb.AddTorque(new Vector3(Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f)), ForceMode.VelocityChange);
                     rb.MovePosition(transform.position + Vector3.up);
 
@@ -189,8 +195,6 @@ public class EnemyBehaviour : MonoBehaviour
                     ignore_damage = true;
                     ignore_collider = other;
                     ignore_timer = 0.0f;
-
-                    target = GameObject.FindGameObjectWithTag("Player").transform;
 
                     state = State.Fry;
                     Damage(50);

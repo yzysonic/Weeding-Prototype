@@ -55,6 +55,9 @@ public class GameControll : MonoBehaviour {
 
     public void GameClear()
     {
+        if (gameover)
+            return;
+
         GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerControl>().enabled = false;
         GameObject.Find("EnemyManager").GetComponent<EnemyManager>().KillAllEnemy();
         GameObject.Find("EnemyManager").SetActive(false);

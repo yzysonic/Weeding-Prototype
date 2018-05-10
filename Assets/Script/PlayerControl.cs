@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerControl : MonoBehaviour {
 
@@ -9,17 +10,47 @@ public class PlayerControl : MonoBehaviour {
     public float jump_speed = 5;
     public float rotate_speed = 10;
     public float gravity = 9.8f;
+    public int sp_max = 100;
+    public float max_kick_time = 1.0f;
     public GameObject attack_foot;
+    public GameObject particle;
     public AudioClip clip_kick;
+    public GameObject ui_hp;
+    public GameObject ui_sp;
+    public float kick_power;
 
     public State state { get; private set; }
+    public int sp
+    {
+        get
+        {
+            return _sp;
+        }
+        set
+        {
+            if (value > sp_max || value < 0)
+                return;
+
+            _sp = value;
+            sp_bar.value = (float)_sp / (float)sp_max;
+
+            if (value == sp_max)
+                particle.SetActive(true);
+        }
+    }
+
+    private AtkTarget atk_target;
     private Animator animator;
     private CharacterController controller;
     private Quaternion target_quat;
     private Vector3 movement;
     private SphereCollider collider_foot;
     private AudioSource audio_source;
+    private Slider hp_bar;
+    private Slider sp_bar;
+    private float kick_timer;
     private int anime_state_kick;
+    private int _sp;
 
     // Use this for initialization
     void Start () {
@@ -32,24 +63,28 @@ public class PlayerControl : MonoBehaviour {
         if (attack_foot != null)
             collider_foot = attack_foot.GetComponent<SphereCollider>();
 
-        AtkTarget atkt = GetComponent<AtkTarget>();
-        atkt.event_damage += Damage;
-        atkt.event_death += () =>
+        atk_target = GetComponent<AtkTarget>();
+        atk_target.event_damage += Damage;
+        atk_target.event_death += () =>
         {
             state.ToDeath();
             var game_ctrl = GameObject.Find("SceneManager").GetComponent<GameControll>();
             game_ctrl.GameOver();
             game_ctrl.gameover_wait_time = 5.0f;
         };
+
+        kick_timer = 0.0f;
+
+        hp_bar = ui_hp.GetComponent<Slider>();
+        sp_bar = ui_sp.GetComponent<Slider>();
+        hp_bar.value = 1.0f;
+        sp_bar.value = sp;
+        sp = 0;
     }
 	
 	// Update is called once per frame
 	void Update () {
         state.Update();
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            GetComponent<AtkTarget>().Damage(99);
-        }
     }
 
     private void OnDisable()
@@ -100,7 +135,7 @@ public class PlayerControl : MonoBehaviour {
 
     private void Damage(int point)
     {
-
+        hp_bar.value = (float)atk_target.GetHP() / (float)atk_target.max_hp;
     }
 
     public abstract class State
@@ -127,6 +162,7 @@ public class PlayerControl : MonoBehaviour {
         public virtual void ToRun() { }
         public virtual void ToJump() { }
         public virtual void ToKick() { }
+        public virtual void ToSuperKick() { }
         public void ToDeath() {
             Set(new StateDeath(player));
         }
@@ -146,6 +182,8 @@ public class PlayerControl : MonoBehaviour {
             // 攻撃入力の検出
             if (Input.GetButtonDown("Fire1"))
                 ToKick();
+            if (Input.GetButtonDown("Fire3"))
+                ToSuperKick();
         }
         public override void ToRun()
         {
@@ -159,6 +197,11 @@ public class PlayerControl : MonoBehaviour {
         {
             Set(new StateKick(player));
         }
+        public override void ToSuperKick()
+        {
+            if(player.sp == player.sp_max)
+                Set(new StateSuperKick(player));
+        }
     }
 
     private class StateKick : State
@@ -166,12 +209,20 @@ public class PlayerControl : MonoBehaviour {
         public StateKick(PlayerControl player) : base(player) { }
         public override void OnEnter()
         {
-            player.animator.SetTrigger("Kick");
-            player.collider_foot.enabled = true;
-            player.audio_source.PlayOneShot(player.clip_kick);
+            player.kick_timer = 0.0f;
         }
         public override void Update()
         {
+            if (Input.GetButtonUp("Fire1") && player.kick_timer >= 0.0f)
+            {
+                player.animator.SetTrigger("Kick");
+                player.collider_foot.enabled = true;
+                player.audio_source.PlayOneShot(player.clip_kick);
+                player.kick_power = player.kick_timer / player.max_kick_time;
+                player.kick_timer = -1.0f;
+            }
+            else
+                player.kick_timer += Time.deltaTime;
         }
         public override void ToIdle()
         {
@@ -194,6 +245,8 @@ public class PlayerControl : MonoBehaviour {
             // 攻撃入力の検出
             if (Input.GetButtonDown("Fire1"))
                 ToKick();
+            if (Input.GetButtonDown("Fire3"))
+                ToSuperKick();
 
         }
         public override void ToIdle()
@@ -207,6 +260,11 @@ public class PlayerControl : MonoBehaviour {
         public override void ToKick()
         {
             Set(new StateKick(player));
+        }
+        public override void ToSuperKick()
+        {
+            if (player.sp == player.sp_max)
+                Set(new StateSuperKick(player));
         }
 
     }
@@ -262,6 +320,52 @@ public class PlayerControl : MonoBehaviour {
             Set(new StateIdle(player));
         }
 
+    }
+
+    private class StateSuperKick : State
+    {
+        private float timer;
+        private float normal_radius;
+
+        public StateSuperKick(PlayerControl player) : base(player) { }
+        public override void OnEnter()
+        {
+            timer = 0.0f;
+            normal_radius = player.attack_foot.GetComponent<SphereCollider>().radius;
+            player.attack_foot.GetComponent<SphereCollider>().radius = 0.02f;
+            player.animator.SetBool("SuperKick", true);
+            player.collider_foot.enabled = true;
+            player.kick_power = 1.2f;
+        }
+        public override void Update()
+        {
+            player.UpdateMove();
+
+            if (timer >= 0.1f)
+            {
+                player.sp--;
+
+                if (player.sp == 0)
+                    ToIdle();
+
+                timer = 0.0f;
+            }
+
+            timer += Time.deltaTime;
+        }
+        public override void OnExit()
+        {
+            player.particle.SetActive(false);
+            player.animator.SetBool("SuperKick", false);
+            player.collider_foot.enabled = false;
+            player.attack_foot.GetComponent<SphereCollider>().radius = 0.005f;
+        }
+
+        public override void ToIdle()
+        {
+            if(player.sp == 0)
+                Set(new StateIdle(player));
+        }
     }
 
     private class StateDeath : State

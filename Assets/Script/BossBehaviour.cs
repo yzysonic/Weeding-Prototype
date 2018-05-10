@@ -103,12 +103,12 @@ public class BossBehaviour : MonoBehaviour
                 VecToTarget /= distance;
                 rb.MoveRotation(Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(new Vector3(VecToTarget.x, 0.0f, VecToTarget.z)), rotate_speed));
                 rb.MovePosition(transform.position + transform.forward * speed * Time.deltaTime);
-                if(step_timer >= 0.6f)
-                {
-                    audio_souce.PlayOneShot(clip_step);
-                    step_timer = 0.0f;
-                }
-                step_timer += Time.deltaTime;
+                //if(step_timer >= 0.7f)
+                //{
+                //    audio_souce.PlayOneShot(clip_step);
+                //    step_timer = 0.0f;
+                //}
+                //step_timer += Time.deltaTime;
 
                 break;
 
@@ -146,6 +146,8 @@ public class BossBehaviour : MonoBehaviour
 
     }
 
+
+
     public void Stop()
     {
         target = null;
@@ -179,10 +181,13 @@ public class BossBehaviour : MonoBehaviour
                 {
                     sc.isTrigger = false;
                     rb.isKinematic = false;
-                    float angle = GameObject.FindGameObjectWithTag("Player").transform.eulerAngles.y * Mathf.Deg2Rad;
-                    rb.AddForce(new Vector3(fry_speed * 7.0f * Mathf.Sin(angle), fry_speed, fry_speed * 7.0f * Mathf.Cos(angle)), ForceMode.VelocityChange);
-                    rb.AddTorque(new Vector3(Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f), Random.Range(0.0f, 5000.0f)), ForceMode.VelocityChange);
-                    rb.MovePosition(transform.position + Vector3.up);
+                    var player = GameObject.FindGameObjectWithTag("Player");
+                    float angle = player.transform.eulerAngles.y * Mathf.Deg2Rad;
+                    float power = fry_speed * (player.GetComponent<PlayerControl>().kick_power + 0.3f) * 2.0f;
+                    rb.AddForce(new Vector3(power * Mathf.Sin(angle) * 7.0f, power, power * Mathf.Cos(angle) * 7.0f), ForceMode.VelocityChange);
+                    
+                    //rb.AddTorque(new Vector3(Random.Range(0.0f, 1000.0f), Random.Range(0.0f, 1000.0f), Random.Range(0.0f, 1000.0f)), ForceMode.VelocityChange);
+                    rb.MovePosition(transform.position + Vector3.up*1.5f);
 
                     // 一時的当たり判定を無効化
                     Physics.IgnoreCollision(sc, other);

@@ -32,12 +32,12 @@ public class TimeManager : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
+
         if (time <= 0)
             return;
 
         timer += Time.deltaTime;
         time = (int)(init_time - timer);
-        
-            //GameObject.Find("SceneManager").GetComponent<GameControll>().GameClear();
+
     }
 }
